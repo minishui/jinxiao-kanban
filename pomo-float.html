@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>番茄钟 · 悬浮</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1a1a2e;
+  --surface:#16213e;
+  --text:#e2e8f0;
+  --text-dim:#94a3b8;
+  --accent:#f59e0b;
+  --accent-dim:rgba(245,158,11,0.2);
+  --green:#10b981;
+  --red:#ef4444;
+  --border:rgba(255,255,255,0.06);
+  --radius:16px;
+}
+html,body{
+  height:100%;width:100%;
+  background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  overflow:hidden;
+  user-select:none;
+  -webkit-user-select:none;
+}
+body{display:flex;align-items:center;justify-content:center}
+
+.container{
+  width:100%;height:100%;padding:16px 20px;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+.progress-bar{
+  position:absolute;top:0;left:0;height:3px;
+  background:var(--accent);
+  transition:width 0.5s linear;
+  border-radius:0 2px 2px 0;
+}
+.progress-bar.paused{background:var(--text-dim)}
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  margin-right:6px;flex-shrink:0;
+}
+.status-dot.active{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.status-dot.paused{background:var(--text-dim)}
+.status-label{
+  font-size:11px;color:var(--text-dim);
+  display:flex;align-items:center;gap:4px;
+}
+.btn-close{
+  width:28px;height:28px;border-radius:50%;
+  border:none;background:var(--border);
+  color:var(--text-dim);cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;
+}
+.btn-close:hover{background:rgba(255,255,255,0.12);color:var(--text)}
+.timer-section{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:8px;
+}
+.timer-ring-wrap{
+  position:relative;width:120px;height:120px;
+}
+.timer-ring{
+  width:100%;height:100%;transform:rotate(-90deg);
+}
+.timer-ring .bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:5}
+.timer-ring .fg{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 0.4s linear}
+.timer-ring .fg.paused{stroke:var(--text-dim)}
+.timer-time{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:36px;font-weight:700;color:var(--text);
+  font-variant-numeric:tabular-nums;letter-spacing:2px;
+}
+.timer-time.paused{color:var(--text-dim)}
+.task-info{
+  text-align:center;padding:0 4px;
+}
+.task-title{
+  font-size:13px;color:var(--text-dim);
+  line-height:1.4;max-width:280px;
+  overflow:hidden;text-overflow:ellipsis;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.idle-state{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;color:var(--text-dim);
+}
+.idle-icon{font-size:40px;opacity:0.3}
+.idle-text{font-size:13px}
+.bootstrap-hint{
+  position:fixed;bottom:12px;left:50%;transform:translateX(-50%);
+  font-size:11px;color:var(--text-dim);text-align:center;max-width:90%;
+  background:rgba(0,0,0,0.4);padding:6px 10px;border-radius:8px;
+}
+</style>
+</head>
+<body>
+<div class="container" id="container">
+  <div class="idle-state">
+    <div class="idle-icon">🍅</div>
+    <div class="idle-text">正在打开桌面浮窗…</div>
+  </div>
+  <div class="bootstrap-hint">如果浮窗没有飘出，请确保使用 Chrome 116+ 浏览器</div>
+</div>
+
+<script>
+const FLOAT_KEY = 'jinxiao-float-pomo';
+
+function formatTime(sec){
+  const m=Math.floor(sec/60),s=sec%60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+const CIRCUM = 2*Math.PI*52;
+
+function renderIdle(){
+  document.getElementById('container').innerHTML=`
+    <div class="progress-bar" style="width:0"></div>
+    <div class="idle-state">
+      <div class="idle-icon">🍅</div>
+      <div class="idle-text">无活跃番茄钟</div>
+    </div>`;
+}
+
+function renderPomo(data){
+  const {taskTitle,endAt,totalSec,status,remainingSec:pausedRemaining}=data;
+  const now=Date.now();
+  let remaining,progress;
+  if(status==='paused'){
+    remaining=pausedRemaining||0;
+    progress=totalSec>0?remaining/totalSec:0;
+  }else{
+    remaining=Math.max(0,Math.ceil((endAt-now)/1000));
+    progress=remaining/totalSec;
+  }
+  const offset=CIRCUM*(1-progress);
+  const isActive=status==='active';
+  const pct=Math.round(progress*100);
+
+  document.getElementById('container').innerHTML=`
+    <div class="progress-bar ${isActive?'':'paused'}" style="width:${pct}%"></div>
+    <div class="header">
+      <div class="status-label">
+        <span class="status-dot ${isActive?'active':'paused'}"></span>
+        <span>${isActive?'进行中':'已暂停'}</span>
+      </div>
+      <button class="btn-close" id="closeBtn" title="关闭">✕</button>
+    </div>
+    <div class="timer-section">
+      <div class="timer-ring-wrap">
+        <svg class="timer-ring" viewBox="0 0 120 120">
+          <circle class="bg" cx="60" cy="60" r="52"/>
+          <circle class="fg ${isActive?'':'paused'}" cx="60" cy="60" r="52"
+            stroke-dasharray="${CIRCUM}" stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="timer-time ${isActive?'':'paused'}">${remaining>0?formatTime(remaining):'00:00'}</div>
+      </div>
+      <div class="task-info">
+        <div class="task-title">${escapeHtml(taskTitle)}</div>
+      </div>
+    </div>`;
+  const cb=document.getElementById('closeBtn');
+  if(cb)cb.onclick=()=>window.close();
+}
+
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function check(){
+  try{
+    const raw=localStorage.getItem(FLOAT_KEY);
+    if(!raw){renderIdle();return}
+    const data=JSON.parse(raw);
+    if(!data||!data.taskId){renderIdle();return}
+    renderPomo(data);
+  }catch(e){renderIdle()}
+}
+
+// 自动进入 Document Picture-in-Picture 模式（Chrome 116+），飘到桌面所有应用之上
+(async function bootstrap(){
+  if(window.documentPictureInPicture){
+    try{
+      const pip=await window.documentPictureInPicture.requestWindow({width:360,height:240});
+      // 把当前页面的样式和内容克隆到 pip 窗口
+      const styles=document.querySelectorAll('style');
+      styles.forEach(s=>{
+        const clone=s.cloneNode(true);
+        pip.document.head.appendChild(clone);
+      });
+      // 复制 container 内容（先调用一次 check 填充）
+      check();
+      const container=document.getElementById('container');
+      pip.document.body.innerHTML='';
+      const styleEl=pip.document.createElement('style');
+      styleEl.textContent='html,body{height:100%;width:100%;background:#1a1a2e;margin:0;overflow:hidden}body{display:flex;align-items:center;justify-content:center}.container{width:100%;height:100%}';
+      pip.document.head.appendChild(styleEl);
+      pip.document.body.appendChild(container.cloneNode(true));
+      // 在 pip 窗口里跑轮询
+      const checkInPip=()=>{
+        try{
+          const raw=localStorage.getItem(FLOAT_KEY);
+          if(!raw){return}
+          const data=JSON.parse(raw);
+          if(!data||!data.taskId){return}
+          // 重新渲染 pip 窗口
+          const tmpDiv=pip.document.createElement('div');
+          pip.document.body.innerHTML='';
+          const c=document.createElement('div');
+          c.id='container';
+          c.className='container';
+          pip.document.body.appendChild(c);
+          renderPomoInWindow(pip,data);
+        }catch(e){}
+      };
+      // 简单渲染函数
+      window.renderPomoInWindow=function(pipWin,data){
+        const taskTitle=data.taskTitle,endAt=data.endAt,totalSec=data.totalSec,pausedRemaining=data.remainingSec;
+        const now=Date.now();
+        let remaining,progress;
+        if(data.status==='paused'){remaining=pausedRemaining||0;progress=totalSec>0?remaining/totalSec:0;}
+        else{remaining=Math.max(0,Math.ceil((endAt-now)/1000));progress=remaining/totalSec;}
+        const offset=CIRCUM*(1-progress);
+        const isActive=data.status==='active';
+        const pct=Math.round(progress*100);
+        const c=pipWin.document.getElementById('container');
+        if(!c)return;
+        c.innerHTML=
+          '<div class="progress-bar '+(isActive?'':'paused')+'" style="width:'+pct+'%"></div>'+
+          '<div class="header"><div class="status-label"><span class="status-dot '+(isActive?'active':'paused')+'"></span><span>'+(isActive?'进行中':'已暂停')+'</span></div>'+
+          '<button class="btn-close" id="closeBtn" title="关闭">✕</button></div>'+
+          '<div class="timer-section"><div class="timer-ring-wrap"><svg class="timer-ring" viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg '+(isActive?'':'paused')+'" cx="60" cy="60" r="52" stroke-dasharray="'+CIRCUM+'" stroke-dashoffset="'+offset+'"/></svg>'+
+          '<div class="timer-time '+(isActive?'':'paused')+'">'+(remaining>0?formatTime(remaining):'00:00')+'</div></div>'+
+          '<div class="task-info"><div class="task-title">'+escapeHtml(taskTitle)+'</div></div></div>';
+        const cb=pipWin.document.getElementById('closeBtn');
+        if(cb)cb.onclick=function(){pipWin.close();};
+      };
+      // 启动 pip 窗口的轮询
+      setInterval(()=>{
+        try{
+          const raw=localStorage.getItem(FLOAT_KEY);
+          if(!raw){return}
+          const data=JSON.parse(raw);
+          if(!data||!data.taskId){return}
+          renderPomoInWindow(pip,data);
+        }catch(e){}
+      },500);
+      // 关闭当前普通窗口（因为已经飘出 pip 浮窗了）
+      // 保留以便用户看到提示；不直接关闭，避免被误关闭
+      return;
+    }catch(e){
+      console.warn('Document PiP 失败，使用兼容模式',e);
+    }
+  }
+  // 降级：在当前普通窗口显示内容
+  document.querySelector('.bootstrap-hint')?.remove();
+  check();
+  setInterval(check,500);
+})();
+
+// 跨窗口同步（兼容模式）
+window.addEventListener('storage',e=>{
+  if(e.key===FLOAT_KEY)check();
+});
+
+// 兼容模式：2秒无活动自动关闭
+let emptyCount=0;
+const origCheck=check;
+check=function(){
+  try{
+    const raw=localStorage.getItem(FLOAT_KEY);
+    if(!raw){emptyCount++;if(emptyCount>4){window.close();return}}else{emptyCount=0}
+  }catch(e){}
+  origCheck();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>进校增长 · 任务统计</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#eef1f6;
+  --surface:#ffffff;
+  --surface-2:#f8fafc;
+  --text:#1a202c;
+  --text-muted:#64748b;
+  --text-light:#94a3b8;
+  --border:#e2e8f0;
+  --border-light:#edf1f7;
+  --shadow-xs:0 1px 2px rgba(0,0,0,.04);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.03);
+  --shadow:0 2px 8px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.04);
+  --shadow-md:0 6px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.12);
+  --radius-lg:14px;
+  --radius:10px;
+  --radius-sm:7px;
+
+  --p0:#ef4444;--p0-bg:#fef2f2;--p0-border:#fecaca;
+  --p1:#f97316;--p1-bg:#fff7ed;--p1-border:#fed7aa;
+  --p2:#3b82f6;--p2-bg:#eff6ff;--p2-border:#bfdbfe;
+  --p3:#94a3b8;--p3-bg:#f8fafc;--p3-border:#e2e8f0;
+
+  --cat-need:#6366f1;--cat-need-bg:#eef2ff;
+  --cat-data:#059669;--cat-data-bg:#ecfdf5;
+  --cat-ai:#8b5cf6;--cat-ai-bg:#f5f3ff;
+  --cat-other:#64748b;--cat-other-bg:#f1f5f9;
+
+  --primary:#6366f1;
+  --tomato:#ef4444;
+  --tomato-bg:#fef2f2;
+  --tomato-border:#fecaca;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Header */
+.app-header{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow-sm);
+  position:sticky;top:0;z-index:100;
+}
+.header-inner{
+  max-width:960px;margin:0 auto;
+  padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:16px;
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--tomato) 0%,var(--primary) 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:700;color:#fff;
+  box-shadow:0 4px 12px rgba(99,102,241,.3);
+}
+.header-title h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.header-title span{font-size:12px;color:var(--text-muted);display:block}
+.header-right{display:flex;align-items:center;gap:10px}
+.link-back{
+  padding:7px 14px;border-radius:8px;
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  color:var(--text-muted);
+  font-size:12px;font-weight:600;
+  text-decoration:none;
+  transition:all .2s;
+  display:inline-flex;align-items:center;gap:5px;
+}
+.link-back:hover{border-color:var(--primary);color:var(--primary)}
+
+/* Container */
+.container{max-width:960px;margin:0 auto;padding:24px}
+
+/* Overview Cards */
+.overview{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:14px;margin-bottom:24px;
+}
+.stat-card{
+  background:var(--surface);border-radius:var(--radius-lg);
+  padding:18px 20px;border:1px solid var(--border-light);
+  box-shadow:var(--shadow-xs);
+  transition:box-shadow .2s;
+}
+.stat-card:hover{box-shadow:var(--shadow)}
+.stat-card .stat-icon{
+  width:36px;height:36px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;margin-bottom:10px;
+}
+.stat-card .stat-num{
+  font-size:28px;font-weight:800;letter-spacing:-.02em;
+  line-height:1;
+}
+.stat-card .stat-label{
+  font-size:12px;color:var(--text-muted);margin-top:4px;font-weight:500;
+}
+.stat-icon.today{background:#fef2f2;color:#ef4444}
+.stat-icon.tomorrow{background:#fff7ed;color:#f97316}
+.stat-icon.week{background:#eef2ff;color:#6366f1}
+.stat-icon.focus{background:#ecfdf5;color:#10b981}
+
+/* Tab */
+.tabs{
+  display:flex;gap:6px;margin-bottom:20px;
+  background:var(--surface);border-radius:var(--radius);
+  padding:5px;border:1px solid var(--border-light);
+  box-shadow:var(--shadow-xs);
+}
+.tab-btn{
+  flex:1;padding:10px 16px;border:none;border-radius:7px;
+  background:transparent;color:var(--text-muted);
+  font-size:14px;font-family:inherit;font-weight:600;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;
+}
+.tab-btn:hover{background:var(--surface-2);color:var(--text)}
+.tab-btn.active{
+  background:linear-gradient(135deg,var(--primary) 0%,#8b5cf6 100%);
+  color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.25);
+}
+.tab-badge{
+  font-size:11px;background:rgba(255,255,255,.2);
+  padding:1px 7px;border-radius:10px;font-weight:700;
+}
+.tab-btn.active .tab-badge{color:#fff}
+.tab-btn:not(.active) .tab-badge{
+  background:var(--surface-2);color:var(--text-muted);
+}
+
+/* Section */
+.section{
+  background:var(--surface);border-radius:var(--radius-lg);
+  border:1px solid var(--border-light);
+  margin-bottom:18px;overflow:hidden;
+  box-shadow:var(--shadow-xs);
+}
+.section-header{
+  display:flex;align-items:center;gap:10px;
+  padding:16px 20px;border-bottom:1px solid var(--border-light);
+}
+.section-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+.section-title{font-size:14px;font-weight:700;color:var(--text)}
+.section-count{
+  font-size:12px;font-weight:700;color:var(--text-muted);
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:6px;padding:1px 8px;
+}
+.section-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+
+/* Task Card */
+.task-row{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;background:var(--surface-2);
+  border:1px solid var(--border-light);
+  border-radius:var(--radius);transition:all .2s;
+}
+.task-row:hover{border-color:#d4dae4;box-shadow:var(--shadow-sm)}
+.task-main{flex:1;min-width:0}
+.task-title-row{
+  display:flex;align-items:center;gap:8px;margin-bottom:4px;
+}
+.task-title-row h3{
+  font-size:14px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.task-meta{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.priority-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:1px 6px;border-radius:4px;
+  font-size:10.5px;font-weight:700;
+}
+.priority-badge::before{
+  content:"";width:4px;height:4px;border-radius:50%;background:currentColor;
+}
+.priority-p0{background:var(--p0-bg);color:var(--p0);border:1px solid var(--p0-border)}
+.priority-p1{background:var(--p1-bg);color:var(--p1);border:1px solid var(--p1-border)}
+.priority-p2{background:var(--p2-bg);color:var(--p2);border:1px solid var(--p2-border)}
+.priority-p3{background:var(--p3-bg);color:var(--p3);border:1px solid var(--p3-border)}
+
+.category-tag{
+  display:inline-flex;padding:1px 7px;border-radius:4px;
+  font-size:10.5px;font-weight:600;
+}
+.cat-need{background:var(--cat-need-bg);color:var(--cat-need)}
+.cat-data{background:var(--cat-data-bg);color:var(--cat-data)}
+.cat-ai{background:var(--cat-ai-bg);color:var(--cat-ai)}
+.cat-other{background:var(--cat-other-bg);color:var(--cat-other)}
+
+.assignee{font-size:12px;color:var(--text-muted);font-weight:500}
+.due-time{
+  font-size:12px;font-weight:600;color:var(--text-muted);
+  display:flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.due-time.overdue{color:var(--p0)}
+.due-time.today{color:var(--p1)}
+.due-time svg{width:12px;height:12px;opacity:.6}
+
+/* Pomodoro */
+.pomo-section{
+  display:flex;align-items:center;gap:14px;
+  flex-shrink:0;padding-left:16px;border-left:1px solid var(--border);
+}
+.pomo-ring-wrap{position:relative;width:56px;height:56px;flex-shrink:0}
+.pomo-ring{
+  transform:rotate(-90deg);
+  width:56px;height:56px;
+}
+.pomo-ring .bg{fill:none;stroke:var(--border);stroke-width:4}
+.pomo-ring .fg{fill:none;stroke:var(--tomato);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .3s linear}
+.pomo-time-text{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:var(--text);
+  letter-spacing:-.02em;
+}
+.pomo-controls{display:flex;flex-direction:column;gap:6px}
+.pomo-btn{
+  padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;
+  font-size:11.5px;font-family:inherit;font-weight:600;
+  cursor:pointer;transition:all .2s;
+  display:inline-flex;align-items:center;gap:4px;justify-content:center;
+}
+.pomo-start{
+  background:var(--tomato);color:#fff;border-color:var(--tomato);
+}
+.pomo-start:hover{background:#dc2626}
+.pomo-start:active{transform:scale(.96)}
+.pomo-pause{
+  background:var(--p1);color:#fff;border-color:var(--p1);
+}
+.pomo-pause:hover{background:#ea580c}
+.pomo-reset{
+  background:var(--surface);color:var(--text-muted);
+}
+.pomo-reset:hover{border-color:#cbd5e1;color:var(--text)}
+.pomo-total{
+  font-size:11px;color:var(--text-muted);text-align:center;
+  padding-top:4px;
+}
+.pomo-total span{font-weight:700;color:var(--text)}
+
+.pomo-settings{
+  display:flex;align-items:center;gap:6px;margin-top:4px;
+}
+.pomo-settings input{
+  width:44px;padding:3px 5px;border:1px solid var(--border);
+  border-radius:5px;font-size:11px;text-align:center;
+  font-family:inherit;
+}
+.pomo-settings label{font-size:11px;color:var(--text-light)}
+
+/* Pomo active ring animation */
+.pomo-ring-wrap.active .pomo-ring .fg{
+  stroke:var(--tomato);
+}
+.pomo-ring-wrap.paused .pomo-ring .fg{
+  stroke:var(--p1);
+}
+
+/* Empty State */
+.empty-state{
+  text-align:center;padding:40px 20px;color:var(--text-light);font-size:13px;
+}
+.empty-state svg{width:40px;height:40px;margin-bottom:10px;opacity:.3}
+
+/* Responsive */
+@media(max-width:768px){
+  .overview{grid-template-columns:repeat(2,1fr)}
+  .task-row{flex-direction:column;align-items:stretch}
+  .pomo-section{border-left:none;border-top:1px solid var(--border);padding-left:0;padding-top:12px;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="header-logo">计</div>
+      <div class="header-title">
+        <h1>进校增长 · 任务统计</h1>
+        <span>按截止日期跟踪任务 & 番茄钟专注</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <a class="link-back" href="进校增长-任务看板.html">← 任务看板</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Overview -->
+  <div class="overview" id="overview"></div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="today">
+      今日 <span class="tab-badge" id="todayBadge">0</span>
+    </button>
+    <button class="tab-btn" data-tab="tomorrow">
+      明日 <span class="tab-badge" id="tomorrowBadge">0</span>
+    </button>
+    <button class="tab-btn" data-tab="week">
+      本周 <span class="tab-badge" id="weekBadge">0</span>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div id="content"></div>
+
+  <!-- Pomodoro Complete Toast -->
+  <div id="pomoToast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a202c;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:200;box-shadow:var(--shadow-lg);white-space:nowrap">🍅 番茄钟完成！休息一下吧~</div>
+</div>
+
+<script>
+// ===== Data =====
+const STORAGE_KEY = 'jinxiao-tasks';
+const POMO_KEY = 'jinxiao-pomo'; // { taskId: totalSeconds }
+const CAT_CLASS = {
+  '进校需求':'cat-need','数据':'cat-data','AI应用':'cat-ai','其他':'cat-other',
+};
+const MEMBERS = {'邬水':'#6366f1'};
+
+function loadTasks(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch{return[]} }
+function saveTasks(t){localStorage.setItem(STORAGE_KEY,JSON.stringify(t))}
+function loadPomo(){ try{return JSON.parse(localStorage.getItem(POMO_KEY)||'{}')}catch{return{}} }
+function savePomo(p){localStorage.setItem(POMO_KEY,JSON.stringify(p))}
+
+let tasks = loadTasks();
+let pomoData = loadPomo();
+let currentTab = 'today';
+let pomoTimers = {}; // { taskId: { intervalId, remainingSec, totalSec, status } }
+
+// ===== Helpers =====
+function getDateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+function todayKey(){ return getDateKey(new Date()) }
+function tomorrowKey(){
+  const d=new Date();d.setDate(d.getDate()+1);return getDateKey(d);
+}
+function weekKeys(){
+  const today=new Date();const day=today.getDay();
+  const monday=new Date(today);monday.setDate(today.getDate()-(day===0?6:day-1));
+  const keys=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    keys.push(getDateKey(d));
+  }
+  return keys;
+}
+function getDueDateKey(task){
+  if(!task.due)return'';
+  const d=new Date(task.due);
+  return getDateKey(d);
+}
+function formatTime(d){
+  const h=String(d.getHours()).padStart(2,'0');
+  const m=String(d.getMinutes()).padStart(2,'0');
+  return `${h}:${m}`;
+}
+function formatDuration(totalSec){
+  if(totalSec<60)return`${totalSec}秒`;
+  const h=Math.floor(totalSec/3600),m=Math.floor((totalSec%3600)/60);
+  if(h>0)return`${h}小时${m}分钟`;
+  return`${m}分钟`;
+}
+function getCategoryClass(cat){return CAT_CLASS[cat]||'cat-other'}
+
+// ===== Filter tasks =====
+function getTasksForToday(){
+  const k=todayKey();
+  return tasks.filter(t=>getDueDateKey(t)===k);
+}
+function getTasksForTomorrow(){
+  const k=tomorrowKey();
+  return tasks.filter(t=>getDueDateKey(t)===k);
+}
+function getTasksForWeek(){
+  const wk=weekKeys();
+  return tasks.filter(t=>wk.includes(getDueDateKey(t)));
+}
+
+// ===== Pomo =====
+const DEFAULT_POMO=25*60; // 25 min
+const CIRCUMFERENCE=2*Math.PI*24; // r=24
+
+function startPomo(taskId){
+  stopPomo(taskId); // stop existing first
+
+  const input=document.getElementById('pomoMin-'+taskId);
+  let totalSec=(parseInt(input?.value)||25)*60;
+  if(totalSec<60)totalSec=25*60;
+  let remainingSec=totalSec;
+
+  // Update UI
+  const ringEl=document.getElementById('pomoRing-'+taskId);
+  const wrap=ringEl?.closest('.pomo-ring-wrap');
+  if(wrap){wrap.classList.remove('paused');wrap.classList.add('active')}
+
+  updatePomoRing(taskId,remainingSec,totalSec);
+
+  // Buttons
+  document.getElementById('pomoStart-'+taskId).style.display='none';
+  document.getElementById('pomoPause-'+taskId).style.display='';
+  document.getElementById('pomoReset-'+taskId).style.display='';
+
+  const intervalId=setInterval(()=>{
+    remainingSec--;
+    updatePomoRing(taskId,remainingSec,totalSec);
+    if(remainingSec<=0){
+      stopPomo(taskId);
+      // Add to total
+      if(!pomoData[taskId])pomoData[taskId]=0;
+      pomoData[taskId]+=totalSec;
+      savePomo(pomoData);
+      updatePomoTotal(taskId);
+      // Toast
+      showPomoToast();
+      // Reset ring
+      updatePomoRing(taskId,0,totalSec);
+    }
+  },1000);
+
+  pomoTimers[taskId]={intervalId,remainingSec,totalSec,status:'active'};
+}
+
+function pausePomo(taskId){
+  const tm=pomoTimers[taskId];if(!tm)return;
+  clearInterval(tm.intervalId);
+  if(tm.status==='active'){
+    tm.status='paused';
+    const wrap=document.getElementById('pomoRing-'+taskId)?.closest('.pomo-ring-wrap');
+    if(wrap){wrap.classList.add('paused');wrap.classList.remove('active')}
+    document.getElementById('pomoPause-'+taskId).textContent='▶ 继续';
+    // Save partial time
+    const elapsed=tm.totalSec-tm.remainingSec;
+    if(!pomoData[taskId])pomoData[taskId]=0;
+    pomoData[taskId]+=elapsed;
+    savePomo(pomoData);
+    updatePomoTotal(taskId);
+  } else {
+    // Resume
+    const totalSec=document.getElementById('pomoMin-'+taskId); 
+    let remaining = tm.remainingSec;
+    if(remaining<=0) remaining = (parseInt(totalSec?.value)||25)*60;
+    tm.remainingSec=remaining;
+    tm.totalSec=remaining;
+    tm.status='active';
+    const wrap=document.getElementById('pomoRing-'+taskId)?.closest('.pomo-ring-wrap');
+    if(wrap){wrap.classList.remove('paused');wrap.classList.add('active')}
+    document.getElementById('pomoPause-'+taskId).textContent='⏸ 暂停';
+    // Continue countdown
+    const intervalId=setInterval(()=>{
+      tm.remainingSec--;
+      updatePomoRing(taskId,tm.remainingSec,tm.totalSec);
+      if(tm.remainingSec<=0){
+        stopPomo(taskId);
+        if(!pomoData[taskId])pomoData[taskId]=0;
+        pomoData[taskId]+=tm.totalSec;
+        savePomo(pomoData);
+        updatePomoTotal(taskId);
+        showPomoToast();
+        updatePomoRing(taskId,0,tm.totalSec);
+      }
+    },1000);
+    tm.intervalId=intervalId;
+  }
+  pomoTimers[taskId]=tm;
+}
+
+function stopPomo(taskId){
+  const tm=pomoTimers[taskId];if(!tm){delete pomoTimers[taskId];return}
+  clearInterval(tm.intervalId);
+  if(tm.status==='active'){
+    const elapsed=tm.totalSec-tm.remainingSec;
+    if(!pomoData[taskId])pomoData[taskId]=0;
+    pomoData[taskId]+=elapsed;
+    savePomo(pomoData);
+    updatePomoTotal(taskId);
+  }
+  delete pomoTimers[taskId];
+
+  // Reset UI
+  const ringEl=document.getElementById('pomoRing-'+taskId);
+  const wrap=ringEl?.closest('.pomo-ring-wrap');
+  if(wrap){wrap.classList.remove('active','paused')}
+  const startBtn=document.getElementById('pomoStart-'+taskId);
+  const pauseBtn=document.getElementById('pomoPause-'+taskId);
+  const resetBtn=document.getElementById('pomoReset-'+taskId);
+  if(startBtn)startBtn.style.display='';
+  if(pauseBtn){pauseBtn.style.display='none';pauseBtn.textContent='⏸ 暂停'}
+  if(resetBtn)resetBtn.style.display='none';
+
+  const input=document.getElementById('pomoMin-'+taskId);
+  const totalSec=(parseInt(input?.value)||25)*60;
+  updatePomoRing(taskId,totalSec,totalSec);
+}
+
+function updatePomoRing(taskId,remaining,total){
+  const fg=document.getElementById('pomoRingFg-'+taskId);
+  if(!fg)return;
+  const progress=total>0?remaining/total:1;
+  const offset=CIRCUMFERENCE*(1-progress);
+  fg.style.strokeDasharray=`${CIRCUMFERENCE}`;
+  fg.style.strokeDashoffset=offset;
+
+  const timeEl=document.getElementById('pomoTime-'+taskId);
+  if(timeEl){
+    const m=Math.floor(remaining/60),s=remaining%60;
+    timeEl.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+}
+
+function updatePomoTotal(taskId){
+  const el=document.getElementById('pomoTotal-'+taskId);
+  if(el){el.innerHTML=`已专注 <span>${formatDuration(pomoData[taskId]||0)}</span>`}
+}
+
+function showPomoToast(){
+  const t=document.getElementById('pomoToast');
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+// ===== Render =====
+function render(){
+  const todayTasks=getTasksForToday();
+  const tomorrowTasks=getTasksForTomorrow();
+  const weekTasks=getTasksForWeek();
+  const totalFocusSec=Object.values(pomoData).reduce((a,b)=>a+b,0);
+
+  // Update badges
+  document.getElementById('todayBadge').textContent=todayTasks.length;
+  document.getElementById('tomorrowBadge').textContent=tomorrowTasks.length;
+  document.getElementById('weekBadge').textContent=weekTasks.length;
+
+  // Overview
+  document.getElementById('overview').innerHTML=`
+    <div class="stat-card">
+      <div class="stat-icon today">📅</div>
+      <div class="stat-num">${todayTasks.length}</div>
+      <div class="stat-label">今日任务</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon tomorrow">🔜</div>
+      <div class="stat-num">${tomorrowTasks.length}</div>
+      <div class="stat-label">明日任务</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon week">📊</div>
+      <div class="stat-num">${weekTasks.length}</div>
+      <div class="stat-label">本周任务</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon focus">🍅</div>
+      <div class="stat-num">${Object.keys(pomoData).length}</div>
+      <div class="stat-label">累计专注 ${formatDuration(totalFocusSec)}</div>
+    </div>`;
+
+  // Build content based on tab
+  let tasksToShow;
+  if(currentTab==='today')tasksToShow=todayTasks;
+  else if(currentTab==='tomorrow')tasksToShow=tomorrowTasks;
+  else tasksToShow=weekTasks;
+
+  let html='';
+
+  if(currentTab==='today'){
+    // Split: 进行中 vs 待进行
+    const inProgress=tasksToShow.filter(t=>t.column==='inprogress');
+    const pending=tasksToShow.filter(t=>t.column!=='inprogress');
+
+    html+=renderSection('进行中','#f59e0b',inProgress,true);
+    html+=renderSection('待进行','#94a3b8',pending,false);
+  } else {
+    html+=renderSection(currentTab==='tomorrow'?'明日任务':'本周任务',
+      currentTab==='tomorrow'?'#f97316':'#6366f1',tasksToShow,false);
+  }
+
+  document.getElementById('content').innerHTML=html||`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 15h6"/></svg><p>暂无任务</p></div>`;
+
+  // Restore active pomo timers
+  Object.keys(pomoTimers).forEach(taskId=>{
+    const tm=pomoTimers[taskId];
+    if(tm.status==='active'){
+      const startBtn=document.getElementById('pomoStart-'+taskId);
+      const pauseBtn=document.getElementById('pomoPause-'+taskId);
+      const resetBtn=document.getElementById('pomoReset-'+taskId);
+      if(startBtn)startBtn.style.display='none';
+      if(pauseBtn)pauseBtn.style.display='';
+      if(resetBtn)resetBtn.style.display='';
+      const wrap=document.getElementById('pomoRing-'+taskId)?.closest('.pomo-ring-wrap');
+      if(wrap)wrap.classList.add('active');
+    } else if(tm.status==='paused'){
+      const startBtn=document.getElementById('pomoStart-'+taskId);
+      const pauseBtn=document.getElementById('pomoPause-'+taskId);
+      const resetBtn=document.getElementById('pomoReset-'+taskId);
+      if(startBtn)startBtn.style.display='none';
+      if(pauseBtn){pauseBtn.style.display='';pauseBtn.textContent='▶ 继续'}
+      if(resetBtn)resetBtn.style.display='';
+      const wrap=document.getElementById('pomoRing-'+taskId)?.closest('.pomo-ring-wrap');
+      if(wrap)wrap.classList.add('paused');
+    }
+  });
+}
+
+function renderSection(title,color,taskList,showPomo){
+  if(taskList.length===0){
+    return `<div class="section">
+      <div class="section-header">
+        <span class="section-dot" style="background:${color}"></span>
+        <span class="section-title">${title}</span>
+        <span class="section-count">0</span>
+      </div>
+      <div class="section-body">
+        <div class="empty-state"><p>暂无任务</p></div>
+      </div></div>`;
+  }
+
+  let cards='';
+  taskList.forEach(task=>{
+    const mc=MEMBERS[task.assignee]||'#64748b';
+    const cc=getCategoryClass(task.category);
+    const pm=pomoData[task.id]||0;
+
+    let ds='',dc='';
+    if(task.due){
+      const d=new Date(task.due);
+      const now=new Date();
+      const today=new Date();today.setHours(0,0,0,0);
+      const taskDay=new Date(d);taskDay.setHours(0,0,0,0);
+      const diff=(taskDay-today)/86400000;
+      if(diff<0){ds='已逾期';dc='overdue'}
+      else if(diff===0){ds='今天 '+formatTime(d);dc='today'}
+      else ds=formatTime(d);
+    }
+
+    let pomoSection='';
+    if(showPomo){
+      const inputMin=25;
+      const totalSec=inputMin*60;
+      pomoSection=`
+      <div class="pomo-section">
+        <div class="pomo-ring-wrap" id="pomoWrap-${task.id}">
+          <svg class="pomo-ring" viewBox="0 0 56 56">
+            <circle class="bg" cx="28" cy="28" r="24"/>
+            <circle class="fg" id="pomoRingFg-${task.id}" cx="28" cy="28" r="24"
+              stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="0"/>
+          </svg>
+          <div class="pomo-time-text" id="pomoTime-${task.id}">25:00</div>
+        </div>
+        <div class="pomo-controls">
+          <button class="pomo-btn pomo-start" id="pomoStart-${task.id}" onclick="startPomo(${task.id})">▶ 开始</button>
+          <button class="pomo-btn pomo-pause" id="pomoPause-${task.id}" onclick="pausePomo(${task.id})" style="display:none">⏸ 暂停</button>
+          <button class="pomo-btn pomo-reset" id="pomoReset-${task.id}" onclick="stopPomo(${task.id})" style="display:none">↺ 重置</button>
+          <div class="pomo-settings">
+            <label>分钟</label>
+            <input type="number" id="pomoMin-${task.id}" value="25" min="1" max="120"
+              oninput="this.value=Math.max(1,Math.min(120,parseInt(this.value)||25))" style="width:44px">
+          </div>
+          <div class="pomo-total" id="pomoTotal-${task.id}">${pm ? `已专注 <span>${formatDuration(pm)}</span>` : '尚未开始'}</div>
+        </div>
+      </div>`;
+    }
+
+    cards+=`
+    <div class="task-row">
+      <div class="task-main">
+        <div class="task-title-row">
+          <span class="priority-badge priority-${task.priority.toLowerCase()}">${task.priority}</span>
+          <span class="category-tag ${cc}">${task.category}</span>
+          <h3>${task.title}</h3>
+        </div>
+        <div class="task-meta">
+          <span class="assignee">👤 ${task.assignee}</span>
+          <span style="font-size:11px;color:var(--text-light)">提需: ${task.requester}</span>
+          <span class="due-time ${ds==='已逾期'||ds==='逾期'?'overdue':(ds&&ds.startsWith('今天')?'today':'')}">
+            ${task.due?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> `+ds:'无截止日期'}</span>
+        </div>
+      </div>
+      ${pomoSection}
+    </div>`;
+  });
+
+  return `<div class="section">
+    <div class="section-header">
+      <span class="section-dot" style="background:${color}"></span>
+      <span class="section-title">${title}</span>
+      <span class="section-count">${taskList.length}</span>
+    </div>
+    <div class="section-body">${cards}</div>
+  </div>`;
+}
+
+// ===== Tab switching =====
+document.getElementById('tabs').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab-btn');if(!btn)return;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab=btn.dataset.tab;
+  render();
+});
+
+// ===== Init =====
+function init(){
+  render();
+  // Auto-refresh every 5s to keep pomo rings in sync even without re-render
+  // (but only when pomo is running)
+  setInterval(()=>{
+    let hasActive=false;
+    Object.values(pomoTimers).forEach(tm=>{if(tm.status==='active')hasActive=true});
+    if(!hasActive)return;
+    Object.keys(pomoTimers).forEach(taskId=>{
+      const tm=pomoTimers[taskId];
+      if(tm.status==='active'){
+        updatePomoRing(taskId,tm.remainingSec,tm.totalSec);
+      }
+    });
+  },1000);
+}
+
+init();
+</script>
+
+</body>
+</html>
